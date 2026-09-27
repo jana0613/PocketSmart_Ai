@@ -1,13 +1,18 @@
 import json
 from typing import Optional
-from google import genai
-from google.genai import types
 from ..config import get_settings
+
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:  # Allows fallback mode to work before optional AI dependency is installed.
+    genai = None
+    types = None
 
 class GeminiService:
     def __init__(self):
         settings = get_settings()
-        self.enabled = bool(settings.gemini_api_key)
+        self.enabled = bool(settings.gemini_api_key) and genai is not None
         self.model = settings.gemini_model
         self.client = genai.Client(api_key=settings.gemini_api_key) if self.enabled else None
 
@@ -27,7 +32,6 @@ class GeminiService:
                     max_output_tokens=4096,
                 ),
             )
-            text = response.text.strip()
-            return json.loads(text)
+            return json.loads(response.text.strip())
         except Exception:
             return None
